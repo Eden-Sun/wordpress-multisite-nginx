@@ -1,0 +1,22 @@
+# WordPress application files
+wp-app/
+
+# Database backup directory
+wp-data/
+
+# Database dumps
+*.sql
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

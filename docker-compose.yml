@@ -1,0 +1,62 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress_user
+      MYSQL_PASSWORD: wordpress_pass
+    volumes:
+      - wordpress-new_mariadb_data:/var/lib/mysql
+    networks:
+      - web
+
+  wordpress:
+    image: wordpress:fpm-alpine
+    container_name: wordpress
+    depends_on:
+      - mariadb
+    environment:
+      WORDPRESS_DB_HOST: mariadb:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress_user
+      WORDPRESS_DB_PASSWORD: wordpress_pass
+    volumes:
+      - /home/r7/witsper/wordpress-docker-compose/wp-app:/var/www/html
+    networks:
+      - web
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    depends_on:
+      - wordpress
+    ports:
+      - "192.168.1.55:80:80"
+    volumes:
+      - /home/r7/witsper/wordpress-docker-compose/wp-app:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - web
+
+  wpcli:
+    image: wordpress:cli
+    container_name: wpcli
+    depends_on:
+      - wordpress
+    entrypoint: sh
+    tty: true
+    volumes:
+      - /home/r7/witsper/wordpress-docker-compose/wp-app:/var/www/html
+    networks:
+      - web
+
+volumes:
+  wordpress-new_mariadb_data:
+    external: true
+
+networks:
+  web:
+    driver: bridge
