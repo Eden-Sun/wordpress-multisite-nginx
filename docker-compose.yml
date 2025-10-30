@@ -20,6 +20,7 @@ services:
     container_name: wordpress
     depends_on:
       - mariadb
+    user: "1000:1000"
     environment:
       WORDPRESS_DB_HOST: mariadb:3306
       WORDPRESS_DB_NAME: wordpress
@@ -27,6 +28,7 @@ services:
       WORDPRESS_DB_PASSWORD: wordpress_pass
     volumes:
       - /home/r7/witsper/wordpress-docker-compose/wp-app:/var/www/html
+      - ./php.ini:/usr/local/etc/php/conf.d/custom-php.ini
     networks:
       - web
 
@@ -48,7 +50,7 @@ services:
     container_name: wpcli
     depends_on:
       - wordpress
-    user: "33:33"
+    user: "1000:1000"
     volumes:
       - /home/r7/witsper/wordpress-docker-compose/wp-app:/var/www/html
     networks:
