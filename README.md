@@ -4,7 +4,8 @@ Production-ready WordPress Multisite with Nginx, PHP-FPM, and MariaDB.
 
 ## Stack
 
-- **WordPress**: FPM Alpine (lightweight, FastCGI Process Manager)
+- **WordPress**: FPM Debian (FastCGI Process Manager with FFI support)
+- **PHP**: 8.3.27 (with FFI extension enabled for Go interop)
 - **Web Server**: Nginx Alpine (configured for Multisite subdirectory)
 - **Database**: MariaDB (faster than MySQL)
 - **CLI**: WP-CLI (WordPress command-line interface)
@@ -70,9 +71,26 @@ environment:
 
 ### WP-CLI
 ```bash
-docker compose run --rm wpcli wp plugin list
-docker compose run --rm wpcli wp core version
+# Core commands
+docker compose run --rm wpcli core version
+docker compose run --rm wpcli core update
+
+# Plugin management
+docker compose run --rm wpcli plugin list
+docker compose run --rm wpcli plugin install <plugin-name> --activate
+
+# User management
+docker compose run --rm wpcli user list
+docker compose run --rm wpcli user create username email@example.com --role=administrator
+docker compose run --rm wpcli user add-role <user-id> administrator
+
+# Multisite: Super Admin management (required for plugin access)
+docker compose run --rm wpcli super-admin list
+docker compose run --rm wpcli super-admin add <username>
+docker compose run --rm wpcli super-admin remove <username>
 ```
+
+**Note**: In Multisite mode, only Super Admins can manage plugins. Regular site administrators need to be promoted to Super Admin to access plugin management.
 
 ## Multisite Setup
 
@@ -124,6 +142,45 @@ docker exec mariadb mysqldump -uroot -proot wordpress > backup.sql
 ### Database Connection Errors
 - **Cause**: WordPress container starting before MariaDB is ready
 - **Fix**: Wait 5-10 seconds, or add healthcheck to `docker-compose.yml`
+
+### FFI Extension Support
+
+The WordPress container includes PHP FFI (Foreign Function Interface) extension for Go/C interoperability.
+
+**Verify FFI is enabled:**
+```bash
+docker exec wordpress php -m | grep FFI
+# Output: FFI
+```
+
+**Test FFI functionality:**
+```bash
+# Basic test
+docker exec wordpress php -r "var_dump(extension_loaded('FFI'));"
+
+# Test with C definitions
+docker exec wordpress php -r "
+  \$ffi = FFI::cdef('int abs(int);', 'libc.so.6');
+  echo 'FFI Test: ' . \$ffi->abs(-42) . PHP_EOL;
+"
+
+# Test with WordPress loaded
+docker exec wordpress php -r "
+  require('/var/www/html/wp-load.php');
+  echo 'FFI in WordPress: ' . (extension_loaded('FFI') ? 'ENABLED' : 'DISABLED');
+"
+```
+
+**Important Notes:**
+- FFI is available in the `wordpress` container (Debian-based)
+- FFI is **NOT** available in `wpcli` container (uses different image)
+- Use `docker exec wordpress` for FFI operations, not `docker compose run wpcli`
+- If you modify the Dockerfile, rebuild with: `docker compose build wordpress`
+
+**Why Debian instead of Alpine?**
+- Alpine Linux (musl libc) has FFI stability issues causing segmentation faults
+- Debian (glibc) provides stable FFI support without crashes
+- Minimal configuration required - just install the extension
 
 ## Production Considerations
 

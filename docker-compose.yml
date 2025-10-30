@@ -14,7 +14,9 @@ services:
       - web
 
   wordpress:
-    image: wordpress:fpm-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: wordpress
     depends_on:
       - mariadb
@@ -46,8 +48,7 @@ services:
     container_name: wpcli
     depends_on:
       - wordpress
-    entrypoint: sh
-    tty: true
+    user: "33:33"
     volumes:
       - /home/r7/witsper/wordpress-docker-compose/wp-app:/var/www/html
     networks:
